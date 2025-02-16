@@ -4,8 +4,8 @@
 #![test_runner(crate::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
-mod vga_buffer;
 mod serial;
+mod vga_buffer;
 
 use core::fmt::Write;
 use core::panic::PanicInfo;
@@ -30,7 +30,7 @@ fn panic(info: &PanicInfo) -> ! {
 
 #[cfg(test)]
 pub fn test_runner(tests: &[&dyn Fn()]) {
-    println!("running {} tests", tests.len());
+    serial_println!("running {} tests", tests.len());
     for test in tests {
         test();
     }
@@ -38,9 +38,10 @@ pub fn test_runner(tests: &[&dyn Fn()]) {
 }
 
 #[test_case]
-    print!("trivial assertion... ");
+fn trivial_assertion() {
+    serial_print!("trivial assertion... ");
     assert_eq!(2 - 1, 1);
-    println!("[ok]");
+    serial_println!("[ok]");
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
