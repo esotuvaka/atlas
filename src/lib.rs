@@ -1,16 +1,24 @@
 #![no_std]
 #![cfg_attr(test, no_main)]
 #![feature(custom_test_frameworks)]
+#![feature(abi_x86_interrupt)]
 #![test_runner(crate::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
+pub mod interrupts;
 pub mod serial;
 pub mod vga_buffer;
 
 use core::panic::PanicInfo;
 
+/// central place for all init routines that can be shared across
+/// various _start() fns in main.rs, lib.rs, and integration tests
+pub fn init() {
+    interrupts::init_idt();
+}
+
 pub trait Testable {
-    fn run(&self) -> ();
+    fn run(&self);
 }
 
 impl<T> Testable for T
@@ -43,6 +51,7 @@ pub fn test_panic_handler(info: &PanicInfo) -> ! {
 #[cfg(test)]
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
+    init();
     test_main();
     loop {}
 }
