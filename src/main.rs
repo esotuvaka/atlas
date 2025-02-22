@@ -9,6 +9,8 @@ mod vga_buffer;
 
 use core::panic::PanicInfo;
 
+use x86_64::registers::control::Cr3;
+
 // this function is our entrypoint since the C linker
 // looks for a '_start' function by default
 #[no_mangle] // don't mangle the name of this function in stack traces
@@ -16,6 +18,12 @@ pub extern "C" fn _start() -> ! {
     println!("Hello World{}", "!");
 
     atlas::init();
+
+    let (level_4_page_table, _) = Cr3::read();
+    println!(
+        "Level 4 page table at: {:?}",
+        level_4_page_table.start_address()
+    );
 
     #[cfg(test)]
     test_main();
