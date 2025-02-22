@@ -5,6 +5,7 @@
 #![test_runner(crate::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
+pub mod gdt;
 pub mod interrupts;
 pub mod serial;
 pub mod vga_buffer;
@@ -14,6 +15,7 @@ use core::panic::PanicInfo;
 /// central place for all init routines that can be shared across
 /// various _start() fns in main.rs, lib.rs, and integration tests
 pub fn init() {
+    gdt::init();
     interrupts::init_idt();
 }
 
