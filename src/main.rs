@@ -17,16 +17,11 @@ pub extern "C" fn _start() -> ! {
 
     atlas::init();
 
-    fn stack_overflow() {
-        stack_overflow();
-    }
-    stack_overflow();
-
     #[cfg(test)]
     test_main();
 
-    println!("NO KERNEL CRASH!");
-    loop {}
+    println!("It did not crash!");
+    atlas::hlt_loop()
 }
 
 // Called on panic
@@ -34,7 +29,7 @@ pub extern "C" fn _start() -> ! {
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
     println!("{}", info);
-    loop {}
+    atlas::hlt_loop();
 }
 
 // panic handler in test mode
