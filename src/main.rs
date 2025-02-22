@@ -9,21 +9,33 @@ mod vga_buffer;
 
 use core::panic::PanicInfo;
 
-use x86_64::registers::control::Cr3;
+use atlas::memory::{self, BootInfoFrameAllocator};
+use bootloader::{entry_point, BootInfo};
+use x86_64::{
+    structures::paging::{Page, Translate},
+    VirtAddr,
+};
 
-// this function is our entrypoint since the C linker
-// looks for a '_start' function by default
-#[no_mangle] // don't mangle the name of this function in stack traces
-pub extern "C" fn _start() -> ! {
+entry_point!(kernel_main);
+
+/// This function is our entrypoint via the C linker.
+/// Bootloader crate provides a macro to enforce our FFI
+/// entrypoint always has the correct function signature.
+fn kernel_main(boot_info: &'static BootInfo) -> ! {
     println!("Hello World{}", "!");
-
     atlas::init();
 
-    let (level_4_page_table, _) = Cr3::read();
-    println!(
-        "Level 4 page table at: {:?}",
-        level_4_page_table.start_address()
-    );
+    let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
+    let mut mapper = unsafe { memory::init(phys_mem_offset) };
+    let mut frame_allocator = unsafe { BootInfoFrameAllocator::init(&boot_info.memory_map) };
+
+    // map an unused page
+    let page = Page::containing_address(VirtAddr::new(0xdeadbeef000));
+    memory::create_example_mapping(page, &mut mapper, &mut frame_allocator);
+
+    // write the string `New!` to the screen through the new mapping
+    let page_ptr: *mut u64 = page.start_address().as_mut_ptr();
+    unsafe { page_ptr.offset(400).write_volatile(0x_f021_f077_f065_f04e) }
 
     #[cfg(test)]
     test_main();
