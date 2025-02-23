@@ -41,3 +41,4 @@ cargo test --test <test_name>
 -   2/22/2025
 
 ![hello world](./documentation/hello_world_keyboard_input.PNG)
+![heap allocator](./documentation/heap_allocator.PNG)
