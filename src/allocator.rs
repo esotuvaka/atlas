@@ -1,3 +1,6 @@
+pub mod bump;
+
+use bump::BumpAllocator;
 use core::{
     alloc::{GlobalAlloc, Layout},
     ptr::null_mut,
@@ -10,10 +13,54 @@ use x86_64::{
     VirtAddr,
 };
 
-use crate::println;
+/// Wrapper around spin::Mutex to permit trait implementations.
+///
+/// Enables synchronized interior mutability over `A`.
+pub struct Locked<A> {
+    inner: spin::Mutex<A>,
+}
 
+impl<A> Locked<A> {
+    pub const fn new(inner: A) -> Self {
+        Locked {
+            inner: spin::Mutex::new(inner),
+        }
+    }
+
+    pub fn lock(&self) -> spin::MutexGuard<A> {
+        self.inner.lock()
+    }
+}
+
+/// Align the given address `addr` upwards to alignment `align`.
+///
+/// Requires that `align` is a power of two (guaranteed via the `GlobalAlloc`
+/// trait and its `Layout` parameter). Creates a bitmask to align addresses
+/// efficiently.
+fn align_up(addr: usize, align: usize) -> usize {
+    // SLOW
+    // let remainder = addr % align;
+    // if remainder == 0 {
+    //     addr // addr already aligned
+    // } else {
+    //     addr - remainder + align
+    // }
+
+    // FASTER
+    // 1. As a power of two, `align` has a single bit set;                              e.g: 0b000100000
+    // 2. This means that `align - 1` has all lower bits set;                           e.g: 0b000011111
+    // 3. ! (bitwise NOT) gives a number with all bits set except lower than align; e.g: 0b..11111000000
+    // 4. & (bitwise AND) with `!(align - 1)` aligns the address downwards (clears bits lower than align)
+    // 5. To align up instead of down, increase `addr` by `align - 1` before performing &
+    (addr + align - 1) & !(align - 1)
+}
+
+// FIXME: requires `heap_start` be `*mut u8` for polymorph with `linked_list_allocator`
 #[global_allocator]
-static ALLOCATOR: LockedHeap = LockedHeap::empty();
+static ALLOCATOR: Locked<BumpAllocator> = Locked::new(BumpAllocator::new());
+
+// #[global_allocator]
+// static ALLOCATOR: LockedHeap = LockedHeap::empty();
 
 pub const HEAP_START: usize = 0x_4444_4444_0000;
 pub const HEAP_SIZE: usize = 100 * 1024; // 100 KiB
