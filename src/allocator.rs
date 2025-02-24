@@ -1,11 +1,12 @@
 pub mod bump;
+pub mod linked_list;
 
 use bump::BumpAllocator;
 use core::{
     alloc::{GlobalAlloc, Layout},
     ptr::null_mut,
 };
-use linked_list_allocator::LockedHeap;
+use linked_list::LinkedListAllocator;
 use x86_64::{
     structures::paging::{
         mapper::MapToError, FrameAllocator, Mapper, Page, PageTableFlags, Size4KiB,
@@ -55,9 +56,12 @@ fn align_up(addr: usize, align: usize) -> usize {
     (addr + align - 1) & !(align - 1)
 }
 
-// FIXME: requires `heap_start` be `*mut u8` for polymorph with `linked_list_allocator`
 #[global_allocator]
-static ALLOCATOR: Locked<BumpAllocator> = Locked::new(BumpAllocator::new());
+static ALLOCATOR: Locked<LinkedListAllocator> = Locked::new(LinkedListAllocator::new());
+
+// FIXME: requires `heap_start` be `*mut u8` for polymorph with `linked_list_allocator`
+// #[global_allocator]
+// static ALLOCATOR: Locked<BumpAllocator> = Locked::new(BumpAllocator::new());
 
 // #[global_allocator]
 // static ALLOCATOR: LockedHeap = LockedHeap::empty();
@@ -86,7 +90,9 @@ pub fn init_heap(
     }
 
     unsafe {
-        let heap_start = HEAP_START as *mut u8;
+        // let heap_start = HEAP_START as *mut u8;
+        // ALLOCATOR.lock().init(heap_start, HEAP_SIZE);
+        let heap_start = HEAP_START;
         ALLOCATOR.lock().init(heap_start, HEAP_SIZE);
     }
 
