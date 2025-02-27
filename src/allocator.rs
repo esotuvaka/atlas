@@ -1,4 +1,5 @@
 pub mod bump;
+pub mod fixed_block_size;
 pub mod linked_list;
 
 use bump::BumpAllocator;
@@ -6,6 +7,7 @@ use core::{
     alloc::{GlobalAlloc, Layout},
     ptr::null_mut,
 };
+use fixed_block_size::FixedSizeBlockAllocator;
 use linked_list::LinkedListAllocator;
 use x86_64::{
     structures::paging::{
@@ -57,7 +59,10 @@ fn align_up(addr: usize, align: usize) -> usize {
 }
 
 #[global_allocator]
-static ALLOCATOR: Locked<LinkedListAllocator> = Locked::new(LinkedListAllocator::new());
+static ALLOCATOR: Locked<FixedSizeBlockAllocator> = Locked::new(FixedSizeBlockAllocator::new());
+
+//#[global_allocator]
+//static ALLOCATOR: Locked<LinkedListAllocator> = Locked::new(LinkedListAllocator::new());
 
 // FIXME: requires `heap_start` be `*mut u8` for polymorph with `linked_list_allocator`
 // #[global_allocator]
