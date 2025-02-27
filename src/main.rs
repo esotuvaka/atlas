@@ -13,10 +13,20 @@ use alloc::{boxed::Box, rc::Rc, vec, vec::Vec};
 use atlas::{
     allocator,
     memory::{self, BootInfoFrameAllocator},
+    task::{simple_executor::SimpleExecutor, Task},
 };
 use bootloader::{entry_point, BootInfo};
 use core::panic::PanicInfo;
 use x86_64::{structures::paging::mapper, VirtAddr};
+
+async fn async_number() -> u32 {
+    42
+}
+
+async fn example_task() {
+    let number = async_number().await;
+    println!("async number: {}", number);
+}
 
 entry_point!(kernel_main);
 
@@ -55,6 +65,10 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
         "reference count is {} now",
         Rc::strong_count(&cloned_reference)
     );
+
+    let mut executor = SimpleExecutor::new();
+    executor.spawn(Task::new(example_task()));
+    executor.run();
 
     #[cfg(test)]
     test_main();
