@@ -13,7 +13,7 @@ use alloc::{boxed::Box, rc::Rc, vec, vec::Vec};
 use atlas::{
     allocator,
     memory::{self, BootInfoFrameAllocator},
-    task::{keyboard, simple_executor::SimpleExecutor, Task},
+    task::{executor::Executor, keyboard, simple_executor::SimpleExecutor, Task},
 };
 use bootloader::{entry_point, BootInfo};
 use core::panic::PanicInfo;
@@ -66,7 +66,7 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
         Rc::strong_count(&cloned_reference)
     );
 
-    let mut executor = SimpleExecutor::new();
+    let mut executor = Executor::new();
     executor.spawn(Task::new(example_task()));
     executor.spawn(Task::new(keyboard::print_keypresses()));
     executor.run();
